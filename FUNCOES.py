@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import cv2
 
 
 # CALCULAR TAXA DE COMPRESSAO
@@ -27,16 +26,27 @@ def onebitimg(img, bit):
     return ((img & np.power(2, bit))/np.power(2, bit)).astype('uint8')
 
 
-# DITHERING
-def dither(img):
-    for y in range(0, len(img)):
-        for x in range(0, len(img[0])):
-            oldpixel = img[y][x]
-            newpixel = np.round(oldpixel/255.)
-            img[y][x] = newpixel
-            quant_error = oldpixel - newpixel
+# DITHERING - apply threshold
+def apply_threshold(pixel, colors):
+    return np.round(colors*pixel/255) * (255/colors)
 
-            img[y][x+1] = img[y][x+1] + quant_error*(7./16)
-            img[y+1][x-1] = img[y+1][x-1] + quant_error*(3./16)
-            img[y+1][x] = img[y+1][x] + quant_error*(5./16)
-            img[y+1][x+1] = img[y+1][x+1] + quant_error*(1./16)
+
+# FLOYD–STEINBERG DITHERING
+def dither(oimg, colors):
+    img = oimg.copy()
+    x_lim, y_lim = img.shape[0], img.shape[1]
+    for y in range(y_lim):
+        for x in range(x_lim):
+            oldpixel = img[y][x].copy().astype('uint16')
+            newpixel = apply_threshold(oldpixel.copy(), colors)
+            img[y][x] = newpixel.copy()
+            quant_error = oldpixel - newpixel
+            if x < x_lim - 1:
+                img[y][x + 1] += np.round(quant_error*(7./16)).astype('uint8')
+            if x > 0 and y < y_lim - 1:
+                img[y + 1][x - 1] += np.round(quant_error*(3./16)).astype('uint8')
+            if y < y_lim - 1:
+                img[y + 1][x] += np.round(quant_error*(5./16)).astype('uint8')
+            if x < x_lim - 1 and y < y_lim - 1:
+                img[y + 1][x + 1] += np.round(quant_error*(1./16)).astype('uint8')
+    return img.astype('uint8')
