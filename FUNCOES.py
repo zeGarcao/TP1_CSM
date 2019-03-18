@@ -1,3 +1,4 @@
+import struct
 import os
 import numpy as np
 
@@ -50,3 +51,19 @@ def dither(oimg, colors):
             if x < x_lim - 1 and y < y_lim - 1:
                 img[y + 1][x + 1] += np.round(quant_error*(1./16)).astype('uint8')
     return img.astype('uint8')
+
+
+def save_img_to_bin(imgdata, filename):
+    file = open(filename, 'wb')
+    data = imgdata.copy()
+    h = data.shape[0]
+    w = data.shape[1]
+
+    for y in range(h):
+        for x in range(w):
+            pixel_data = data[y][x].copy()
+            for k in range(len(pixel_data)):
+                entry = struct.pack('>B', pixel_data[k])
+                file.write(entry)
+
+    file.close()
