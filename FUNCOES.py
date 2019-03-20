@@ -1,4 +1,3 @@
-import struct
 import os
 import numpy as np
 
@@ -35,7 +34,7 @@ def apply_threshold(pixel, colors):
 # FLOYD–STEINBERG DITHERING
 def dither(oimg, colors):
     img = oimg.copy()
-    x_lim, y_lim = img.shape[0], img.shape[1]
+    y_lim, x_lim = img.shape[0], img.shape[1]
     for y in range(y_lim):
         for x in range(x_lim):
             oldpixel = img[y][x].copy().astype('uint16')
@@ -53,17 +52,18 @@ def dither(oimg, colors):
     return img.astype('uint8')
 
 
+# SAVE IMAGE TO BIN FILE
 def save_img_to_bin(imgdata, filename):
-    file = open(filename, 'wb')
-    data = imgdata.copy()
-    h = data.shape[0]
-    w = data.shape[1]
+    with open(filename, 'wb') as file:
+        np.array([imgdata.shape[0], imgdata.shape[1]]).astype('uint16').tofile(file)
+        imgdata.tofile(file)
 
-    for y in range(h):
-        for x in range(w):
-            pixel_data = data[y][x].copy()
-            for k in range(len(pixel_data)):
-                entry = struct.pack('>B', pixel_data[k])
-                file.write(entry)
 
-    file.close()
+# READ IMAGE FROM BIN FILE
+def read_img_from_bin(filename):
+    with open(filename, 'rb') as file:
+        h = np.fromfile(file, 'uint16', 1)
+        w = np.fromfile(file, 'uint16', 1)
+        img = np.reshape(np.fromfile(file, 'uint8'), (int(h), int(w), 3))
+
+    return img
